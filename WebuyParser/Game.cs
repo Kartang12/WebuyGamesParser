@@ -1,7 +1,5 @@
 ﻿using Newtonsoft.Json;
-using System;
-using System.Collections.Generic;
-using System.Text;
+
 
 namespace WebuyParser
 {
@@ -23,7 +21,7 @@ namespace WebuyParser
 
         public void GetProfit()
         {
-            Profit = PLBuyPrice - UKSellPrice;
+            Profit = PLBuyPrice * CurrencyConverter.rate - UKSellPrice;
         }
     }
 }

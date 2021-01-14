@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace WebuyParser
 {
@@ -14,10 +14,18 @@ namespace WebuyParser
     //}
     class Program
     {
-
-        public static string[] platforms = {"808", "1003", "782", "1000"};
+        public static Dictionary<string, string> platforms = new Dictionary<string, string>()
+        {
+            {"PS3", "808" },
+            {"PS4", "1003" },
+            {"XBox360", "782" },
+            {"XBoxOne", "1000" }
+        };
+          
         static void Main(string[] args)
         {
+            CurrencyConverter.GetIndex();
+
             List<Game> PS3Games = new List<Game>();
             List<Game> PS4Games = new List<Game>();
             List<Game> XBox360Games = new List<Game>();
@@ -25,88 +33,56 @@ namespace WebuyParser
 
             Processer processer = new Processer();
 
-            GetGames(ref PS3Games,ref PS4Games, ref XBox360Games, ref XBoxOneGames);
+            Parallel.Invoke(
+                () => GetGamesByPlatform(ref PS3Games, platforms["PS3"]),
+                () => GetGamesByPlatform(ref PS4Games, platforms["PS4"]),
+                () => GetGamesByPlatform(ref XBox360Games, platforms["XBox360"]),
+                () => GetGamesByPlatform(ref XBoxOneGames, platforms["XBoxOne"])
+                );
+ 
+
             ExcelWriter.WriteCSV<Game>(PS3Games);
 
         }
 
-        static void GetGames(
-            ref List<Game> PS3List, 
-            ref List<Game> PS4List, 
-            ref List<Game> Xbox360List, 
-            ref List<Game> XBoxOneList )
+        static void GetGamesByPlatform(ref List<Game> GamesList, string platform)
         {
             Processer processer = new Processer();
-            
-            foreach (string platform in platforms)
+
+            try
             {
-                try
+                int i = 1;
+                while (true)
                 {
-                    int i = 1;
-                    while (true)
-                    {
-                        List<Game> temp = processer.GetGames("uk", platform, i);
-                        switch (platform)
-                        {
-                            case "808":
-                                PS3List.AddRange(temp);
-                                break;
-                            case "1003":
-                                PS4List.AddRange(temp);
-                                break;
-                            case "782":
-                                Xbox360List.AddRange(temp);
-                                break;
-                            case "1000":
-                                XBoxOneList.AddRange(temp);
-                                break;
-                        }
-                        i += 50;
-                    }
+                    List<Game> temp = processer.GetGames("uk", platform, i);
+                    GamesList.AddRange(temp);
+
+                    i += 50;
                 }
-                catch (InvalidOperationException ex)
-                {}
-                
             }
+            catch (InvalidOperationException ex)
+            { }
 
-
-            foreach (string platform in platforms)
+            try
             {
-                try
+                int i = 1;
+                while (true)
                 {
-                    int i = 1;
-                    while (true)
+                    List<Game> temp = processer.GetGames("pl", platform, i);
+
+                    foreach (Game game in temp)
                     {
-                        List<Game> temp = processer.GetGames("pl", platform, i);
-                        switch (platform)
-                        {
-                            case "808":
-                                foreach (Game game in temp)
-                                    PS3List.First(x => x.Name == game.Name).PLBuyPrice = game.PLBuyPrice;
-                                break;
-                            case "1003":
-                                foreach (Game game in temp)
-                                    PS4List.First(x => x.Name == game.Name).PLBuyPrice = game.PLBuyPrice;
-                                break;
-                            case "782":
-                                foreach (Game game in temp)
-                                    Xbox360List.First(x => x.Name == game.Name).PLBuyPrice = game.PLBuyPrice;
-                                break;
-                            case "1000":
-                                foreach (Game game in temp)
-                                    XBoxOneList.First(x => x.Name == game.Name).PLBuyPrice = game.PLBuyPrice;
-                                break;
-                        }
-                        i += 50;
+                        GamesList.First(x => x.Name == game.Name).PLBuyPrice = game.PLBuyPrice;
+                        game.GetProfit();
                     }
+                    break;
+
+                    i += 50;
                 }
-                catch (InvalidOperationException ex)
-                { }
-
-
-
             }
+            catch (InvalidOperationException ex)
+            { }
+
         }
-
     }
 }
