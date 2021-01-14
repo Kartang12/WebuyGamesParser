@@ -2,14 +2,12 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-using Microsoft.Office.Interop.Excel;
 
 namespace WebuyParser
 {
     class ExcelWriter
     {
-     
+
         public static void WriteCSV<T>(IEnumerable<T> items)
         {
             Type itemType = typeof(T);

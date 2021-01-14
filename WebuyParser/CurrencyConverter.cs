@@ -7,7 +7,7 @@ namespace WebuyParser
     //get actual exchange rate via this API and store to rate variable
     static class CurrencyConverter
     {
-        static string apiString = "https://api.exchangeratesapi.io/latest?base=PLN&symbols=USD";
+        static string apiString = "https://api.exchangeratesapi.io/latest?base=GBP&symbols=PLN";
 
         public static double rate;
 
@@ -28,7 +28,7 @@ namespace WebuyParser
                 {
                     var unparsed = sr.ReadToEnd();
                     var parsed = JObject.Parse(unparsed);
-                    var a = parsed["rates"]["USD"];
+                    var a = parsed["rates"]["PLN"];
                     rate = double.Parse(a.ToString());
                 }
             }

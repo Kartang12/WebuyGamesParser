@@ -1,6 +1,8 @@
-﻿using System;
+﻿using Ganss.Excel;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace WebuyParser
@@ -14,6 +16,8 @@ namespace WebuyParser
     //}
     class Program
     {
+
+        static Mutex mutexObj = new Mutex();
         public static Dictionary<string, string> platforms = new Dictionary<string, string>()
         {
             {"PS3", "808" },
@@ -24,6 +28,7 @@ namespace WebuyParser
           
         static void Main(string[] args)
         {
+
             CurrencyConverter.GetIndex();
 
             List<Game> PS3Games = new List<Game>();
@@ -31,7 +36,6 @@ namespace WebuyParser
             List<Game> XBox360Games = new List<Game>();
             List<Game> XBoxOneGames = new List<Game>();
 
-            Processer processer = new Processer();
 
             //Parallel.Invoke(
             //    () => GetGamesByPlatform(ref PS3Games, platforms["PS3"]),
@@ -41,23 +45,37 @@ namespace WebuyParser
             //    );
 
             GetGamesByPlatform(ref PS3Games, platforms["PS3"]);
-            
-            ExcelWriter.WriteCSV<Game>(PS3Games);
+            GetGamesByPlatform(ref PS4Games, platforms["PS4"]);
+            GetGamesByPlatform(ref XBox360Games, platforms["XBox360"]);
+            GetGamesByPlatform(ref XBoxOneGames, platforms["XBoxOne"]);
+
+            //GetGamesByPlatform(ref PS3Games, platforms["PS3"]);
+
+            ExcelMapper mapper = new ExcelMapper();
+
+            mapper.Save("report.xlsx",  PS3Games, "PS 3", true);
+            mapper.Save("report.xlsx", PS4Games, "PS 4", true);
+            mapper.Save("report.xlsx", XBox360Games, "XBox 360", true);
+            mapper.Save("report.xlsx", XBoxOneGames, "XBox One", true);
+
+            //ExcelWriter.WriteCSV<Game>(PS3Games);
+
+            //GamesList = GamesList.OrderByDescending(x => x.Profit).ToList();
 
         }
 
         static void GetGamesByPlatform(ref List<Game> GamesList, string platform)
         {
-            Processer processer = new Processer();
-
             //loop to get all games from UK website
             try
             {
                 int i = 1;
                 while (true)
                 {
-                    List<Game> temp = processer.GetGames("uk", platform, i);
+                    List<Game> temp = Processer.GetGames("uk", platform, i);
+
                     GamesList.AddRange(temp);
+                    
 
                     i += 50;
                 }
@@ -71,7 +89,7 @@ namespace WebuyParser
                 int k = 1;
                 while (true)
                 {
-                    List<Game> temp = processer.GetGames("pl", platform, k);
+                    List<Game> temp = Processer.GetGames("pl", platform, k);
 
                     foreach (Game game in temp)
                     {
@@ -79,8 +97,8 @@ namespace WebuyParser
 
                         if (t != null)
                         {
-                            t.PLBuyPrice = Math.Round(game.PLBuyPrice * CurrencyConverter.rate, 2);
-                            t.CalculateProfit();
+                            t.UKSellPrice *= CurrencyConverter.rate;
+                            t.PLBuyPrice = game.PLBuyPrice;
                         }
                     }
 
@@ -90,6 +108,10 @@ namespace WebuyParser
             catch (InvalidOperationException ex)
             { }
 
-}
+            foreach (var game in GamesList)
+                game.CalculateProfit();
+
+            GamesList = GamesList.OrderByDescending(x => x.Profit).ToList();
+        }
     }
 }
