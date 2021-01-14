@@ -1,5 +1,5 @@
 ﻿using Newtonsoft.Json;
-
+using System;
 
 namespace WebuyParser
 {
@@ -17,11 +17,11 @@ namespace WebuyParser
         [JsonProperty("exchangePrice")]
         public double PLBuyPrice { get; set; }
 
-        public double Profit { get; set; }
+        public double Profit { get; set;}
 
-        public void GetProfit()
+        public void CalculateProfit()
         {
-            Profit = PLBuyPrice * CurrencyConverter.rate - UKSellPrice;
+            Profit = Math.Round(PLBuyPrice - UKSellPrice, 2);
         }
     }
 }

@@ -33,14 +33,15 @@ namespace WebuyParser
 
             Processer processer = new Processer();
 
-            Parallel.Invoke(
-                () => GetGamesByPlatform(ref PS3Games, platforms["PS3"]),
-                () => GetGamesByPlatform(ref PS4Games, platforms["PS4"]),
-                () => GetGamesByPlatform(ref XBox360Games, platforms["XBox360"]),
-                () => GetGamesByPlatform(ref XBoxOneGames, platforms["XBoxOne"])
-                );
- 
+            //Parallel.Invoke(
+            //    () => GetGamesByPlatform(ref PS3Games, platforms["PS3"]),
+            //    () => GetGamesByPlatform(ref PS4Games, platforms["PS4"]),
+            //    () => GetGamesByPlatform(ref XBox360Games, platforms["XBox360"]),
+            //    () => GetGamesByPlatform(ref XBoxOneGames, platforms["XBoxOne"])
+            //    );
 
+            GetGamesByPlatform(ref PS3Games, platforms["PS3"]);
+            
             ExcelWriter.WriteCSV<Game>(PS3Games);
 
         }
@@ -49,6 +50,7 @@ namespace WebuyParser
         {
             Processer processer = new Processer();
 
+            //loop to get all games from UK website
             try
             {
                 int i = 1;
@@ -63,26 +65,31 @@ namespace WebuyParser
             catch (InvalidOperationException ex)
             { }
 
+            //loop to add price in PL and calculate profit
             try
             {
-                int i = 1;
+                int k = 1;
                 while (true)
                 {
-                    List<Game> temp = processer.GetGames("pl", platform, i);
+                    List<Game> temp = processer.GetGames("pl", platform, k);
 
                     foreach (Game game in temp)
                     {
-                        GamesList.First(x => x.Name == game.Name).PLBuyPrice = game.PLBuyPrice;
-                        game.GetProfit();
-                    }
-                    break;
+                        var t = GamesList.FirstOrDefault(x => x.Name == game.Name);
 
-                    i += 50;
+                        if (t != null)
+                        {
+                            t.PLBuyPrice = Math.Round(game.PLBuyPrice * CurrencyConverter.rate, 2);
+                            t.CalculateProfit();
+                        }
+                    }
+
+                    k += 50;
                 }
             }
             catch (InvalidOperationException ex)
             { }
 
-        }
+}
     }
 }
