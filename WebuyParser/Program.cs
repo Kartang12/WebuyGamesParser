@@ -1,5 +1,6 @@
 ﻿using Ganss.Excel;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -16,7 +17,6 @@ namespace WebuyParser
     //}
     class Program
     {
-
         static Mutex mutexObj = new Mutex();
         public static Dictionary<string, string> platforms = new Dictionary<string, string>()
         {
@@ -44,10 +44,10 @@ namespace WebuyParser
             //    () => GetGamesByPlatform(ref XBoxOneGames, platforms["XBoxOne"])
             //    );
 
-            GetGamesByPlatform(ref PS3Games, platforms["PS3"]);
-            GetGamesByPlatform(ref PS4Games, platforms["PS4"]);
-            GetGamesByPlatform(ref XBox360Games, platforms["XBox360"]);
-            GetGamesByPlatform(ref XBoxOneGames, platforms["XBoxOne"]);
+            GetGamesByPlatform(PS3Games, platforms["PS3"]);
+            GetGamesByPlatform(PS4Games, platforms["PS4"]);
+            GetGamesByPlatform(XBox360Games, platforms["XBox360"]);
+            GetGamesByPlatform(XBoxOneGames, platforms["XBoxOne"]);
 
             //GetGamesByPlatform(ref PS3Games, platforms["PS3"]);
 
@@ -61,22 +61,38 @@ namespace WebuyParser
             //ExcelWriter.WriteCSV<Game>(PS3Games);
 
             //GamesList = GamesList.OrderByDescending(x => x.Profit).ToList();
-
         }
 
-        static void GetGamesByPlatform(ref List<Game> GamesList, string platform)
+
+        void GetGamesByPlatform(List<Game> GamesList, string platform)
         {
+            Processer processer = new Processer();
             //loop to get all games from UK website
+            #region
+            //try
+            //{
+            //    int i = 1;
+            //    while (true)
+            //    {
+            //        List<Game> temp = processer.GetGames("uk", platform, i).Result;
+            //        GamesList.AddRange(temp);
+            //        ConcurrentBag<Game> a = new ConcurrentBag<Game>();
+
+            //        i += 50;
+            //    }
+            //}
+            //catch (InvalidOperationException ex)
+            //{ }
+            #endregion
             try
             {
                 int i = 1;
                 while (true)
                 {
-                    List<Game> temp = Processer.GetGames("uk", platform, i);
-
+                    List<Game> temp = processer.GetGames("uk", platform, i).Result;
                     GamesList.AddRange(temp);
-                    
-
+                    ConcurrentBag<Game> a = new ConcurrentBag<Game>();
+                   
                     i += 50;
                 }
             }
@@ -89,7 +105,7 @@ namespace WebuyParser
                 int k = 1;
                 while (true)
                 {
-                    List<Game> temp = Processer.GetGames("pl", platform, k);
+                    List<Game> temp = processer.GetGames("pl", platform, k).Result;
 
                     foreach (Game game in temp)
                     {
@@ -101,15 +117,13 @@ namespace WebuyParser
                             t.PLBuyPrice = game.PLBuyPrice;
                         }
                     }
-
                     k += 50;
                 }
             }
             catch (InvalidOperationException ex)
             { }
 
-            foreach (var game in GamesList)
-                game.CalculateProfit();
+            GamesList.ForEach(f  =>  f.CalculateProfit());
 
             GamesList = GamesList.OrderByDescending(x => x.Profit).ToList();
         }
