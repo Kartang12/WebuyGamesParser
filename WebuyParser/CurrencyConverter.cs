@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json.Linq;
+using System;
 using System.IO;
 using System.Net;
 
@@ -29,7 +30,7 @@ namespace WebuyParser
                     var unparsed = sr.ReadToEnd();
                     var parsed = JObject.Parse(unparsed);
                     var a = parsed["rates"]["PLN"];
-                    rate = double.Parse(a.ToString());
+                    rate = Math.Round(double.Parse(a.ToString()), 2);
                 }
             }
         }

@@ -21,7 +21,7 @@ namespace WebuyParser
 
         public void CalculateProfit()
         {
-            Profit = Math.Round(PLBuyPrice - UKSellPrice, 2);
+            Profit = Math.Round((PLBuyPrice - UKSellPrice), 2);
         }
     }
 }
