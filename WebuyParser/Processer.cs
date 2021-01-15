@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.IO;
 using System.Net;
+using System.Threading;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -21,6 +22,7 @@ namespace WebuyParser
             webRequest.ContentType = "application/json";
             webRequest.UserAgent = "Nothing";
 
+            Thread.Sleep(100);
             using (var s = webRequest.GetResponse().GetResponseStream())
             {
                 using (var sr = new StreamReader(s))
@@ -29,7 +31,6 @@ namespace WebuyParser
                     var parsed = JObject.Parse(unparsedList);
                     var a = parsed["response"]["data"]["boxes"];
                     return JsonConvert.DeserializeObject<List<Game>>(a.ToString());
-
                 }
             }
         }

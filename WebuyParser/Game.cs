@@ -17,11 +17,14 @@ namespace WebuyParser
         [JsonProperty("exchangePrice")]
         public double PLBuyPrice { get; set; }
 
-        public double Profit { get; set;}
+        public double Profit { get; set; }
 
         public void CalculateProfit()
         {
-            Profit = Math.Round(PLBuyPrice - UKSellPrice, 2);
+            if (PLBuyPrice == -10000)
+                Profit = PLBuyPrice;
+            else 
+                Profit = Math.Round(PLBuyPrice - UKSellPrice, 2);
         }
     }
 }

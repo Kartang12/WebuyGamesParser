@@ -7,17 +7,9 @@ using System.Threading.Tasks;
 
 namespace WebuyParser
 {
-    //public static class Platforms
-    //{
-    //    public static string PS3 = "808";
-    //    public static string PS4 = "1003";
-    //    public static string XBox360 = "782";
-    //    public static string XBoxOne = "1000";
-    //}
+
     class Program
     {
-
-        static Mutex mutexObj = new Mutex();
         public static Dictionary<string, string> platforms = new Dictionary<string, string>()
         {
             {"PS3", "808" },
@@ -28,7 +20,6 @@ namespace WebuyParser
           
         static void Main(string[] args)
         {
-
             CurrencyConverter.GetIndex();
 
             List<Game> PS3Games = new List<Game>();
@@ -37,35 +28,26 @@ namespace WebuyParser
             List<Game> XBoxOneGames = new List<Game>();
 
 
-            //Parallel.Invoke(
-            //    () => GetGamesByPlatform(ref PS3Games, platforms["PS3"]),
-            //    () => GetGamesByPlatform(ref PS4Games, platforms["PS4"]),
-            //    () => GetGamesByPlatform(ref XBox360Games, platforms["XBox360"]),
-            //    () => GetGamesByPlatform(ref XBoxOneGames, platforms["XBoxOne"])
-            //    );
-
             GetGamesByPlatform(ref PS3Games, platforms["PS3"]);
             GetGamesByPlatform(ref PS4Games, platforms["PS4"]);
             GetGamesByPlatform(ref XBox360Games, platforms["XBox360"]);
             GetGamesByPlatform(ref XBoxOneGames, platforms["XBoxOne"]);
 
-            //GetGamesByPlatform(ref PS3Games, platforms["PS3"]);
 
+            Console.WriteLine("Saving results...");
+            
             ExcelMapper mapper = new ExcelMapper();
-
             mapper.Save("report.xlsx",  PS3Games, "PS 3", true);
             mapper.Save("report.xlsx", PS4Games, "PS 4", true);
             mapper.Save("report.xlsx", XBox360Games, "XBox 360", true);
             mapper.Save("report.xlsx", XBoxOneGames, "XBox One", true);
-
-            //ExcelWriter.WriteCSV<Game>(PS3Games);
-
-            //GamesList = GamesList.OrderByDescending(x => x.Profit).ToList();
-
+           
+            Console.WriteLine("Complete!");
         }
 
         static void GetGamesByPlatform(ref List<Game> GamesList, string platform)
         {
+            Console.WriteLine("Parsing "+platform);
             //loop to get all games from UK website
             try
             {
@@ -73,10 +55,8 @@ namespace WebuyParser
                 while (true)
                 {
                     List<Game> temp = Processer.GetGames("uk", platform, i);
-
+                    temp.ForEach(x => x.PLBuyPrice = -10000);
                     GamesList.AddRange(temp);
-                    
-
                     i += 50;
                 }
             }
@@ -84,6 +64,7 @@ namespace WebuyParser
             { }
 
             //loop to add price in PL and calculate profit
+            Console.WriteLine("Compaaring prices " + platform);
             try
             {
                 int k = 1;
@@ -108,8 +89,7 @@ namespace WebuyParser
             catch (InvalidOperationException ex)
             { }
 
-            foreach (var game in GamesList)
-                game.CalculateProfit();
+            GamesList.ForEach(game =>game.CalculateProfit());
 
             GamesList = GamesList.OrderByDescending(x => x.Profit).ToList();
         }
