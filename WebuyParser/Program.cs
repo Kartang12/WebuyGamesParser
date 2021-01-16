@@ -41,7 +41,7 @@ namespace WebuyParser
             mapper.Save("report.xlsx", PS4Games, "PS 4", true);
             mapper.Save("report.xlsx", XBox360Games, "XBox 360", true);
             mapper.Save("report.xlsx", XBoxOneGames, "XBox One", true);
-           
+
             Console.WriteLine("Complete!");
         }
 
@@ -64,7 +64,7 @@ namespace WebuyParser
             { }
 
             //loop to add price in PL and calculate profit
-            Console.WriteLine("Compaaring prices " + platform);
+            Console.WriteLine("Comparing prices " + platform);
             try
             {
                 int k = 1;
@@ -78,7 +78,7 @@ namespace WebuyParser
 
                         if (t != null)
                         {
-                            t.UKSellPrice *= CurrencyConverter.rate;
+                            t.UKSellPrice = t.UKSellPrice * CurrencyConverter.rate;
                             t.PLBuyPrice = game.PLBuyPrice;
                         }
                     }
