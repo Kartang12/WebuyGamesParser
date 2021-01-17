@@ -1,95 +1,76 @@
-﻿using Ganss.Excel;
-using System;
-using System.Collections.Generic;
+﻿using System;
+using System.Collections.Concurrent;
+using System.IO;
 using System.Linq;
+using System.Threading;
 
 namespace WebuyParser
 {
 
     class Program
     {
-        public static Dictionary<string, string> platforms = new Dictionary<string, string>()
-        {
-            {"PS3", "808" },
-            {"PS4", "1003" },
-            {"XBox360", "782" },
-            {"XBoxOne", "1000" }
-        };
+        static object webLocker = new object();
+        static object fileLocker = new object();
 
         static void Main(string[] args)
         {
-            CurrencyConverter.GetIndex();
-
-            List<Game> PS3Games = new List<Game>();
-            List<Game> PS4Games = new List<Game>();
-            List<Game> XBox360Games = new List<Game>();
-            List<Game> XBoxOneGames = new List<Game>();
-
-
-            GetGamesByPlatform(ref PS3Games, platforms["PS3"]);
-            GetGamesByPlatform(ref PS4Games, platforms["PS4"]);
-            GetGamesByPlatform(ref XBox360Games, platforms["XBox360"]);
-            GetGamesByPlatform(ref XBoxOneGames, platforms["XBoxOne"]);
-
-
-            Console.WriteLine("Saving results...");
-
-            ExcelMapper mapper = new ExcelMapper();
-            mapper.Save("report.xlsx", PS3Games, "PS 3", true);
-            mapper.Save("report.xlsx", PS4Games, "PS 4", true);
-            mapper.Save("report.xlsx", XBox360Games, "XBox 360", true);
-            mapper.Save("report.xlsx", XBoxOneGames, "XBox One", true);
-
-            Console.WriteLine("Complete!");
-        }
-
-        static void GetGamesByPlatform(ref List<Game> GamesList, string platform)
-        {
-            Console.WriteLine("Parsing " + platform);
-            //loop to get all games from UK website
-            try
+            while (true)
             {
-                int i = 1;
-                while (true)
+                CurrencyConverter.GetIndexes();
+                if(CurrencyConverter.euroRate == 0 || CurrencyConverter.poundRate == 0)
                 {
-                    List<Game> temp = Processer.GetGames("uk", platform, i);
-                    temp.ForEach(x => x.PLBuyPrice = -10000);
-                    GamesList.AddRange(temp);
-                    i += 50;
+                    Console.WriteLine("Press y to try again. Any other button to cancel...");
+                    var c = Console.ReadKey();
+                    if (c.KeyChar != 'y')
+                        Environment.Exit(1);
+                    else
+                        continue;
                 }
+                break;
             }
-            catch (InvalidOperationException ex)
-            { }
+            Console.WriteLine(CurrencyConverter.euroRate);
+            Console.WriteLine(CurrencyConverter.poundRate);
 
-            //loop to add price in PL and calculate profit
-            Console.WriteLine("Compaaring prices " + platform);
-            try
+            ConcurrentBag<string> countries = new ConcurrentBag<string>(File.ReadAllLines("settings/countries.txt").ToList());
+            ConcurrentBag<string> platforms = new ConcurrentBag<string>(File.ReadAllLines("settings/platforms.txt").ToList());
+
+            int allowedThreads = Environment.ProcessorCount;
+            int threadCounter = 0;
+            Console.WriteLine($"Number Of allowed threads: {allowedThreads}");
+
+            foreach (string platform in platforms)
             {
-                int k = 1;
-                while (true)
-                {
-                    List<Game> temp = Processer.GetGames("pl", platform, k);
-
-                    foreach (Game game in temp)
+                    if (platform.StartsWith('#'))
                     {
-                        var t = GamesList.FirstOrDefault(x => x.Name == game.Name);
-
-                        if (t != null)
-                        {
-                            t.UKSellPrice *= CurrencyConverter.rate;
-                            t.PLBuyPrice = game.PLBuyPrice;
-                        }
+                        Console.WriteLine("Skip platform " + platform);
+                        continue;
                     }
 
-                    k += 50;
+                while (true)
+                {
+
+                    if (threadCounter < allowedThreads)
+                    {
+                        Interlocked.Add(ref threadCounter, 1);
+                        new Thread(() =>
+                            {
+                                new PlatformProcesser().GetGamesByPlatform(
+                                webLocker,
+                                fileLocker,
+                                platform,
+                                platformsTable[platform],
+                                countries);
+                                Interlocked.Add(ref threadCounter, -1);
+                            }).Start();
+                        Console.WriteLine($"Threads running {threadCounter}  of {allowedThreads}");
+                        break;
+                    }
+                    else
+                    {
+                        Thread.Sleep(1000);
+                    }
                 }
             }
-            catch (InvalidOperationException ex)
-            { }
-
-            GamesList.ForEach(game => game.CalculateProfit());
-
-            GamesList = GamesList.OrderByDescending(x => x.Profit).ToList();
         }
     }
 }
