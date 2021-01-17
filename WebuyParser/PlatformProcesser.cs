@@ -8,7 +8,7 @@ namespace WebuyParser
 {
     internal class PlatformProcesser
     {
-        public void GetGamesByPlatform( object webLocker, object fileLocker,  string platform, string platformKey, IEnumerable countries)
+        public void GetGamesByPlatform( object webLocker, object fileLocker,  string platform,  IEnumerable countries)
         {
             List<Game> GamesList = new List<Game>();
             Processer processer = new Processer();
@@ -19,7 +19,7 @@ namespace WebuyParser
                 int k = 1;
                 while (true)
                 {
-                    List<Game> temp = processer.GetGames(webLocker, "pl", platformKey, k).Result;
+                    List<Game> temp = processer.GetGames(webLocker, "pl", PlatformKeys.CountiesKeys["pl"][platform], k).Result;
                     if (temp == null)
                         break;
                     GamesList.AddRange(temp);
@@ -54,7 +54,7 @@ namespace WebuyParser
                         int i = 1;
                         while (true)
                         {
-                            List<Game> temp = processer.GetGames(webLocker, country, platformKey, i).Result;
+                            List<Game> temp = processer.GetGames(webLocker, country, PlatformKeys.CountiesKeys[country][platform], i).Result;
                             if (temp == null)
                                 break;
                             foreach (Game game in temp)

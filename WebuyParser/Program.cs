@@ -58,7 +58,7 @@ namespace WebuyParser
                                 webLocker,
                                 fileLocker,
                                 platform,
-                                platformsTable[platform],
+                                //platformsTable[platform],
                                 countries);
                                 Interlocked.Add(ref threadCounter, -1);
                             }).Start();
