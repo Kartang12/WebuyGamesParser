@@ -16,6 +16,7 @@ namespace WebuyParser
             //loop to add price in PL
             try
             {
+                Console.WriteLine("Parsing PL - " + platform);
                 int k = 1;
                 while (true)
                 {
@@ -50,8 +51,9 @@ namespace WebuyParser
                     continue;
                 }
                     try
-                    {
-                        int i = 1;
+                {
+                    Console.WriteLine("Parsing "+ country + " - " + platform);
+                    int i = 1;
                         while (true)
                         {
                             List<Game> temp = processer.GetGames(webLocker, country, PlatformKeys.CountiesKeys[country][platform], i).Result;

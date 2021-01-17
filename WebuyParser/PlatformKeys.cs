@@ -64,7 +64,7 @@ namespace WebuyParser
             {"Vita", "983"},
             {"XBox360", "782"},
             {"XBoxOne", "995"},
-            //{"Nintendo DS", "769"}, not in this country
+            {"Nintendo DS", "769"},
             {"3DS", "972"},
             {"Wii", "795"},
             {"Wii U", "986"},
