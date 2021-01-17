@@ -41,9 +41,10 @@ namespace WebuyParser
             }
             catch (InvalidOperationException)
             { }
-            
+
+
             //loop to get all games from UK website
-            foreach(string country in countries)
+            foreach (string country in countries)
             {
                 if(country.StartsWith('#'))
                 {
@@ -61,7 +62,7 @@ namespace WebuyParser
                                 break;
                             foreach (Game game in temp)
                             {
-                                var t = GamesList.FindIndex(x => x.Name == game.Name);
+                                var t = GamesList.FindIndex(x => x.Name.Trim(' ').ToLower() == game.Name.Trim(' ').ToLower());
 
                                 if (t > -1)
                                 {

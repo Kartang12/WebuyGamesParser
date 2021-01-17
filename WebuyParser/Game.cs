@@ -51,16 +51,16 @@ namespace WebuyParser
                 Profit = PLBuyPrice;
             else
             {
-                double max = 0;
+                double min = 10000;
                 foreach (var price in prices)
                 {
-                    if (price > max)
+                    if (price < min && price > 0)
                     {
-                        max = price;
+                        min = price;
                     }
                 }
-                if(max > 0)
-                    Profit = Math.Round(PLBuyPrice - max, 2);
+                if(min > 0)
+                    Profit = Math.Round(PLBuyPrice - min, 2);
             }
         }
 
