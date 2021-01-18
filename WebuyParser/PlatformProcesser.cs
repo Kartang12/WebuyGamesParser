@@ -8,7 +8,7 @@ namespace WebuyParser
 {
     internal class PlatformProcesser
     {
-        public void GetGamesByPlatform( object webLocker, object fileLocker,  string platform,  IEnumerable countries)
+        public void GetGamesByPlatform( object webLocker, object fileLocker,  string platform,  string sellCountry, IEnumerable countries)
         {
             List<Game> GamesList = new List<Game>();
             Processer processer = new Processer();
@@ -16,11 +16,11 @@ namespace WebuyParser
             //loop to add price in PL
             try
             {
-                Console.WriteLine("Parsing PL - " + platform);
+                Console.WriteLine($"Parsing  {sellCountry} - {platform}") ;
                 int k = 1;
                 while (true)
                 {
-                    List<Game> temp = processer.GetGames(webLocker, "pl", PlatformKeys.CountiesKeys["pl"][platform], k).Result;
+                    List<Game> temp = processer.GetGames(webLocker, sellCountry, PlatformKeys.CountiesKeys[sellCountry][platform], k).Result;
                     if (temp == null)
                         break;
                     GamesList.AddRange(temp);
@@ -91,9 +91,10 @@ namespace WebuyParser
             lock(fileLocker)
             {
                 ExcelWriter mapper = ExcelWriter.GetInstance();
-                mapper.SaveFile("report.xlsx", GamesList, platform);
+                mapper.SaveFile(sellCountry.ToUpper() +"_report.xlsx", GamesList, platform);
                 Console.WriteLine(platform + " results saved");
             }
         }
+
     }
 }

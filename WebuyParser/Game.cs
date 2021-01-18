@@ -21,9 +21,10 @@ namespace WebuyParser
         public double ESSellPrice { get; set; }
         public double NLSellPrice { get; set; }
         public double ICSellPrice { get; set; }
+        public double PLSellPrice { get; set; }
 
         [JsonProperty("exchangePrice")]
-        public double PLBuyPrice { get; set; }
+        public double BuyPrice { get; set; }
 
         public double Profit { get; set; }
 
@@ -46,9 +47,11 @@ namespace WebuyParser
                 prices.Add(NLSellPrice);
             if (ICSellPrice > 0)
                 prices.Add(ICSellPrice);
+            if (PLSellPrice > 0)
+                prices.Add(PLSellPrice);
 
-            if (PLBuyPrice == -10000)
-                Profit = PLBuyPrice;
+            if (BuyPrice == -10000)
+                Profit = BuyPrice;
             else
             {
                 double min = 10000;
@@ -60,7 +63,7 @@ namespace WebuyParser
                     }
                 }
                 if(min > 0)
-                    Profit = Math.Round(PLBuyPrice - min, 2);
+                    Profit = Math.Round(BuyPrice - min, 2);
             }
         }
 
@@ -88,6 +91,9 @@ namespace WebuyParser
                     break;
                 case "ic":
                     ICSellPrice = Math.Round(price * CurrencyConverter.euroRate, 2);
+                    break;
+                case "pl":
+                    PLSellPrice = Math.Round(price, 2);
                     break;
             }
         }

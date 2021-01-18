@@ -72,5 +72,34 @@ namespace WebuyParser
                 //}
             });
         }
+
+
+        public async Task<int> GetGamesCount(string country, string category)
+        {
+            return await Task.Run(() =>
+            {
+                string uri = $"https://wss2.cex.{country}.webuy.io/v3/boxes?categoryIds=[{category}]&firstRecord=1&count=2&sortBy=boxname&sortOrder=asc";
+
+                var webRequest = WebRequest.Create(uri) as HttpWebRequest;
+                if (webRequest == null)
+                {
+                    return 0;
+                }
+
+                webRequest.ContentType = "application/json";
+                webRequest.UserAgent = "Nothing";
+
+                using (var s = webRequest.GetResponse().GetResponseStream())
+                {
+                    using (var sr = new StreamReader(s))
+                    {
+                        var unparsedList = sr.ReadToEnd();
+                        var parsed = JObject.Parse(unparsedList);
+                        var a = parsed["response"]["data"]["totalRecords"];
+                        return int.Parse(a.ToString());
+                    }
+                }
+            });
+        }
     }
 }
