@@ -14,6 +14,8 @@ namespace WebuyParser
         }
         private ExcelMapper mapper {get;set;}
 
+        //only one instatnce must be created
+        //saving file with new instance of mapper overrides the file
         private static ExcelWriter _instance;
 
         public static ExcelWriter GetInstance()

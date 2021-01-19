@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using Ganss.Excel;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 
@@ -12,15 +13,24 @@ namespace WebuyParser
         [JsonProperty("categoryFriendlyName")]
         public string Platform { get; set; }
 
+        [Ignore]
         [JsonProperty("sellPrice")]
         public double SellPrice { get; set; }
+        [Column("UK")]
         public double UKSellPrice { get; set; }
+        [Column("PT")]
         public double PTSellPrice { get; set; }
+        [Column("IE")]
         public double IESellPrice { get; set; }
+        [Column("IT")]
         public double ITSellPrice { get; set; }
+        [Column("ES")]
         public double ESSellPrice { get; set; }
+        [Column("NL")]
         public double NLSellPrice { get; set; }
+        [Column("IC")]
         public double ICSellPrice { get; set; }
+        [Column("PL")]
         public double PLSellPrice { get; set; }
 
         [JsonProperty("exchangePrice")]

@@ -78,7 +78,6 @@ namespace WebuyParser
 
                 while (true)
                 {
-
                     if (threadCounter < allowedThreads)
                     {
                         Interlocked.Add(ref threadCounter, 1);
