@@ -11,35 +11,35 @@ namespace WebuyParser
 {
     class GamesProcesser
     {
-        public async Task<List<Game>> GetGames(object locker, string country, string category, int firstRecord, ProxyProcesser proxyProcesser)
-        {
-            return await Task.Run(() =>
-            {
-                string uri = $"https://wss2.cex.{country}.webuy.io/v3/boxes?categoryIds=[{category}]&firstRecord={firstRecord}&count=50&sortBy=boxname&sortOrder=asc";
-                string unparsedList = string.Empty;
+        //public async Task<List<Game>> GetGames(object locker, string country, string category, int firstRecord, ProxyProcesser proxyProcesser)
+        //{
+        //    return await Task.Run(() =>
+        //    {
+        //        string uri = $"https://wss2.cex.{country}.webuy.io/v3/boxes?categoryIds=[{category}]&firstRecord={firstRecord}&count=50&sortBy=boxname&sortOrder=asc";
+        //        string unparsedList = string.Empty;
 
-                try
-                {
-                    Console.WriteLine($"Proxy request {country} {category} {firstRecord}");
-                    unparsedList = proxyProcesser.RequestViaProxy(uri, locker);
-                }
-                catch (WebException e)
-                {
-                    throw e;
-                }
+        //        try
+        //        {
+        //            Console.WriteLine($"Proxy request {country} {category} {firstRecord}");
+        //            unparsedList = proxyProcesser.RequestViaProxy(uri, locker);
+        //        }
+        //        catch (WebException e)
+        //        {
+        //            throw e;
+        //        }
                   
-                try
-                {
-                    var parsed = JObject.Parse(unparsedList);
-                    var a = parsed["response"]["data"]["boxes"];
-                    return JsonConvert.DeserializeObject<List<Game>>(a.ToString());
-                }
-                catch (InvalidOperationException e )
-                {
-                    throw e;
-                }
-            });
-        }
+        //        try
+        //        {
+        //            var parsed = JObject.Parse(unparsedList);
+        //            var a = parsed["response"]["data"]["boxes"];
+        //            return JsonConvert.DeserializeObject<List<Game>>(a.ToString());
+        //        }
+        //        catch (InvalidOperationException e )
+        //        {
+        //            throw e;
+        //        }
+        //    });
+        //}
 
 
         public async Task<int> GetGamesCount(string country, string category, object webLocker)

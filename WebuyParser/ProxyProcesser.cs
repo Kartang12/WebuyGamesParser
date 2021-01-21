@@ -1,9 +1,6 @@
 ﻿using Newtonsoft.Json.Linq;
-using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Net;
-using System.Text;
 using System.Threading;
 
 namespace WebuyParser
@@ -11,7 +8,7 @@ namespace WebuyParser
     class ProxyProcesser
     {
         //this api gives a new proxy on every request
-        private string getProxyString = "http://pubproxy.com/api/proxy";
+        private string getProxyString = "http://pubproxy.com/api/proxy?type=http";
 
         private string proxyAddress;
         private int proxyPort;
@@ -38,10 +35,6 @@ namespace WebuyParser
                 }
 
                 var parsed = JObject.Parse(unparsedJson);
-                var type = parsed["data"][0]["type"].ToString();
-                Console.WriteLine($"Proxy type {type}");
-                if (type != "http")
-                    continue;
                 proxyAddress = parsed["data"][0]["ip"].ToString(); ;
                 proxyPort = int.Parse(parsed["data"][0]["port"].ToString());
                 break;
@@ -56,9 +49,6 @@ namespace WebuyParser
             var request = (HttpWebRequest)WebRequest.Create(requestString);
             request.ContentType = "application/json";
             request.UserAgent = "Nothing";
-            //HttpWebRequest request = (HttpWebRequest)WebRequest.Create(requestString);
-            //WebProxy proxy = new WebProxy(proxyAddress, proxyPort);
-            //proxy.BypassProxyOnLocal = false;
             request.Method = "GET";
             request.Proxy = proxy;
             StreamReader sr;

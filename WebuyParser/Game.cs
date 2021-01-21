@@ -107,5 +107,21 @@ namespace WebuyParser
                     break;
             }
         }
+
+        public void SetSellPrice(string country)
+        {
+            switch (country)
+            {
+                case "uk":
+                    SellPrice = Math.Round(SellPrice * CurrencyConverter.poundRate, 2);
+                    break;
+                case "pl":
+                    SellPrice = Math.Round(SellPrice, 2);
+                    break;
+                default:
+                    SellPrice = Math.Round(SellPrice * CurrencyConverter.euroRate, 2);
+                    break;
+            }
+        }
     }
 }
