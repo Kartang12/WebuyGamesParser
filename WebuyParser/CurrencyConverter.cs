@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net;
 
 namespace WebuyParser
@@ -14,8 +15,9 @@ namespace WebuyParser
 
         public static void GetIndexes()
         {
-            GetIndex("GBP");
-            GetIndex("EUR");
+            SetRates();
+            //GetIndex("GBP");
+            //GetIndex("EUR");
         }
         public static void GetIndex(string currency)
         {
@@ -55,6 +57,13 @@ namespace WebuyParser
                 poundRate = 0;
                 euroRate = 0;
             }
+        }
+
+        private static void SetRates()
+        {
+            List<string> temp = File.ReadAllLines("settings/rates.txt").Where(x => !x.StartsWith('#')).ToList<string>();
+            poundRate = double.Parse(temp[0]);
+            euroRate = double.Parse(temp[1]);
         }
     }
 }

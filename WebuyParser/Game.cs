@@ -72,7 +72,7 @@ namespace WebuyParser
                         min = price;
                     }
                 }
-                if(min > 0)
+                if (min > 0)
                     Profit = Math.Round(BuyPrice - min, 2);
             }
         }
@@ -108,18 +108,18 @@ namespace WebuyParser
             }
         }
 
-        public void SetSellPrice(string country)
+        public void SetBuyPrice(string country)
         {
             switch (country)
             {
                 case "uk":
-                    SellPrice = Math.Round(SellPrice * CurrencyConverter.poundRate, 2);
+                    BuyPrice = Math.Round(BuyPrice * CurrencyConverter.poundRate, 2);
                     break;
                 case "pl":
-                    SellPrice = Math.Round(SellPrice, 2);
+                    BuyPrice = Math.Round(BuyPrice, 2);
                     break;
                 default:
-                    SellPrice = Math.Round(SellPrice * CurrencyConverter.euroRate, 2);
+                    BuyPrice = Math.Round(BuyPrice * CurrencyConverter.euroRate, 2);
                     break;
             }
         }

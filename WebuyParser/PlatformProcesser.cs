@@ -3,6 +3,7 @@ using Newtonsoft.Json.Linq;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -12,151 +13,95 @@ namespace WebuyParser
 {
     internal class PlatformProcesser
     {
-        public void GetGamesByPlatform( object webLocker, object fileLocker,  string platform,  string sellCountry, IEnumerable countries)
+        public void GetGamesByPlatform(object webLocker, object fileLocker, string platform, string sellCountry, IEnumerable countries)
         {
-            //string url1 = $"https://wss2.cex.{sellCountry}.webuy.io/v3/boxes?categoryIds=[{PlatformKeys.CountiesKeys[sellCountry][platform]}]&firstRecord=1&count=50&sortBy=boxname&sortOrder=asc";
-
             List<Game> GamesList = new List<Game>();
             GamesProcesser processer = new GamesProcesser();
-            //ProxyProcesser proxyProcesser = new ProxyProcesser(webLocker);
 
-            //loop to add price in sellCountry
-            //try
+            //loop to add price in PL
+            try
             {
-                Console.WriteLine($"Parsing  {sellCountry} - {platform}") ;
+                int gamesAmount = processer.GetGamesCount(sellCountry, PlatformKeys.CountiesKeys[sellCountry][platform]).Result;
+                Console.WriteLine($"Parsing  {sellCountry} - {platform}");
                 int k = 1;
-                int totlaRecords = processer.GetGamesCount(sellCountry, PlatformKeys.CountiesKeys[sellCountry][platform], webLocker).Result;
-
-                while (k < totlaRecords)
+                while (k < gamesAmount)
                 {
-                    try
-                    {
-                        using (var client = WebConnector.CreateClient(webLocker))
-                        {
-                            while (k < totlaRecords)
-                            {
-                                Console.WriteLine($"{platform} {sellCountry} - {k}");
-                                string url = $"https://wss2.cex.{sellCountry}.webuy.io/v3/boxes?categoryIds=[{PlatformKeys.CountiesKeys[sellCountry][platform]}]&firstRecord={k}&count=50&sortBy=boxname&sortOrder=asc";
-                                string result;
-
-                                var response = client.GetAsync(url).Result;
-                                result = response.Content.ReadAsStringAsync().Result;
-                            
-                                if (result.Contains("429 Too Many Requests"))
-                                {
-                                    throw new WebException("429");
-                                }
-
-                                var parsed = JObject.Parse(result);
-                                var a = parsed["response"]["data"]["boxes"];
-                                GamesList.AddRange(JsonConvert.DeserializeObject<List<Game>>(a.ToString()));
-
-                                k += 50;
-                            }
-                        }
-                    }
-                    catch (WebException e)
-                    {
-                        if (e.Message.Contains("429"))
-                        {
-                            Console.WriteLine("Error 429, retrieving new proxy");
-                            Thread.Sleep(1000);
-                        }
-                        else
-                        {
-                            Console.WriteLine("Error in proxy request");
-                            Console.WriteLine("you have 2 minutes to connect to another VPN");
-                            Console.WriteLine("program will continue in 2 minutes");
-                            Thread.Sleep(120000);
-                        }
-                    }
+                    Console.WriteLine($"Parsing  {sellCountry} - {platform} - {k}");
+                    List<Game> temp = processer.GetGames(webLocker, sellCountry, PlatformKeys.CountiesKeys[sellCountry][platform], k).Result;
+                    if (temp == null)
+                        break;
+                    GamesList.AddRange(temp);
+                    k += 50;
+                }
+            }
+            catch (Exception e)
+            {
+                string path = @"\reports\LOG.txt";
+                using (StreamWriter sw = File.AppendText(path))
+                {
+                    sw.WriteLine($"{sellCountry} - {platform}");
+                    sw.WriteLine($"GamesListSize = {GamesList.Count}");
+                    sw.WriteLine(e.Message);
                 }
             }
 
-            GamesList.ForEach(x => x.SetSellPrice(sellCountry));
+            GamesList.ForEach(x => x.SetBuyPrice(sellCountry));
 
-            //loop to get all games from other websites
+            //loop to get all games from UK website
             foreach (string country in countries)
             {
-                if(country.StartsWith('#'))
+                if (country.StartsWith('#'))
                 {
-                    Console.WriteLine($"Skip country  {country}");
+                    Console.WriteLine("Skip country " + country);
                     continue;
                 }
-                
+
                 try
                 {
-                    Console.WriteLine($"Parsing {country} - {platform}");
-                    int k = 1;
-                    int totlaRecords = processer.GetGamesCount(country, PlatformKeys.CountiesKeys[country][platform], webLocker).Result;
-                    while (k < totlaRecords)
+                    Console.WriteLine("Parsing " + country + " - " + platform);
+                    int gamesAmount = processer.GetGamesCount(country, PlatformKeys.CountiesKeys[country][platform]).Result;
+
+                    int i = 1;
+                    while (i < gamesAmount)
                     {
-
-                        try
+                        Console.WriteLine($"Parsing  {country} - {platform} - {i}");
+                        List<Game> temp = processer.GetGames(webLocker, country, PlatformKeys.CountiesKeys[country][platform], i).Result;
+                        if (temp == null)
+                            break;
+                        foreach (Game game in temp)
                         {
-                            using (var client = WebConnector.CreateClient(webLocker))
+                            var t = GamesList.FindIndex(x => x.Name.Trim(' ').ToLower() == game.Name.Trim(' ').ToLower());
+
+                            if (t > -1)
                             {
-                                while (k < totlaRecords)
-                                {
-                                    Console.WriteLine($"{platform} {country} - {k}");
-                                    string url = $"https://wss2.cex.{country}.webuy.io/v3/boxes?categoryIds=[{PlatformKeys.CountiesKeys[country][platform]}]&firstRecord={k}&count=50&sortBy=boxname&sortOrder=asc";
-
-                                    HttpResponseMessage response;
-                                    //lock (webLocker)
-                                    //{
-                                    Thread.Sleep(100);
-                                    response = client.GetAsync(url).Result;
-
-                                    //}
-                                    var result = response.Content.ReadAsStringAsync().Result;
-
-                                    if (result.Contains("429 Too Many Requests"))
-                                    {
-                                        throw new WebException("429");
-                                    }
-
-                                    var parsed = JObject.Parse(result);
-                                    var a = parsed["response"]["data"]["boxes"];
-                                    var temp = JsonConvert.DeserializeObject<List<Game>>(a.ToString());
-
-                                    foreach (Game game in temp)
-                                    {
-                                        var t = GamesList.FindIndex(x => x.Name.Trim(' ').ToLower() == game.Name.Trim(' ').ToLower());
-                                        if (t > -1)
-                                            GamesList[t].SetPrice(game.SellPrice, country);
-                                    }
-
-                                    k += 50;
-                                }
+                                GamesList[t].SetPrice(game.SellPrice, country);
                             }
                         }
-                        catch (WebException e)
-                        {
-                            if (e.Message.Contains("429"))
-                            {
-                                Console.WriteLine("Error 429, retrieving new proxy");
-                            }
-                            else
-                            {
-                                Console.WriteLine("Error in proxy request");
-                                Console.WriteLine("you have 2 minutes to connect to another VPN");
-                                Console.WriteLine("program will continue in 2 minutes");
-                                Thread.Sleep(120000);
-                            }
-                        }
+
+                        i += 50;
                     }
                 }
-                catch (InvalidOperationException)
-                { }
+                catch (Exception e)
+                {
+                    string path = @"\reports\LOG.txt";
+                    using (StreamWriter sw = File.AppendText(path))
+                    {
+                        sw.WriteLine($"{sellCountry} - {platform}");
+                        sw.WriteLine(e.Message);
+                    }
+                }
             }
 
             GamesList.ForEach(game => game.CalculateProfit());
             GamesList = GamesList.OrderByDescending(x => x.Profit).ToList();
 
-            lock(fileLocker)
+            lock (fileLocker)
             {
+                var reportsDirectory = AppDomain.CurrentDomain.BaseDirectory + "\\reports";
+                if(!Directory.Exists(reportsDirectory))
+                    Directory.CreateDirectory(reportsDirectory);
                 ExcelWriter mapper = ExcelWriter.GetInstance();
-                mapper.SaveFile(sellCountry.ToUpper() +"_report.xlsx", GamesList, platform);
+                mapper.SaveFile(reportsDirectory + "\\" +sellCountry.ToUpper() + "_report.xlsx", GamesList, platform);
                 Console.WriteLine(platform + " results saved");
             }
         }

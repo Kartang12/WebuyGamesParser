@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Ganss.Excel;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
@@ -15,12 +16,25 @@ namespace WebuyParser
 
         static void Main(string[] args)
         {
+            //var fileChecker = new FilesChecker();
+
+            //if (!fileChecker.CheckFilesIntegrity())
+            //{
+            //    Console.WriteLine("====================WARNING====================");
+            //    Console.WriteLine("Files <countries.txt> <sellCountry.txt> and <platforms.txt> were restored");
+            //    Console.WriteLine("Please comment requied strings in <countries.txt> <sellCountry.txt> and <platforms.txt>");
+            //    Console.WriteLine("And restart the program");
+            //    Console.WriteLine("Push any button to cancel...");
+            //    Console.ReadKey();
+            //    Environment.Exit(1);
+            //}
+
             while (true)
             {
                 //Connect to currency API and get exchange data
                 CurrencyConverter.GetIndexes();
                 //Let user retry if samething went wrong
-                if(CurrencyConverter.euroRate == 0 || CurrencyConverter.poundRate == 0)
+                if (CurrencyConverter.euroRate == 0 || CurrencyConverter.poundRate == 0)
                 {
                     Console.WriteLine("Press 'y' to try again. Any other button to cancel...");
                     var c = Console.ReadKey();
@@ -35,9 +49,9 @@ namespace WebuyParser
             Console.WriteLine();
 
             //get all strings from sellCountry.txt and find selected string (in must NOT start with # and must be only one string)
-            List<string> temp = File.ReadAllLines("settings/sellCountry.txt").Where(x=> !x.StartsWith('#')).ToList<string>();
+            List<string> temp = File.ReadAllLines("settings/sellCountry.txt").Where(x => !x.StartsWith('#')).ToList<string>();
             //Message if 0 or more than one country selected
-            if(temp.Count != 1)
+            if (temp.Count != 1)
             {
                 Console.WriteLine("====================ERROR====================");
                 Console.WriteLine("Only 1 country must be selected in <settings/sellCountry.txt> ");
@@ -78,19 +92,20 @@ namespace WebuyParser
 
                 while (true)
                 {
+
                     if (threadCounter < allowedThreads)
                     {
                         Interlocked.Add(ref threadCounter, 1);
                         new Thread(() =>
-                            {
-                                new PlatformProcesser().GetGamesByPlatform(
-                                webLocker,
-                                fileLocker,
-                                platform,
-                                sellCountry,
-                                countries);
-                                Interlocked.Add(ref threadCounter, -1);
-                            }).Start();
+                        {
+                            new PlatformProcesser().GetGamesByPlatform(
+                            webLocker,
+                            fileLocker,
+                            platform,
+                            sellCountry,
+                            countries);
+                            Interlocked.Add(ref threadCounter, -1);
+                        }).Start();
                         Console.WriteLine($"Threads running {threadCounter}  of {allowedThreads}");
                         break;
                     }
