@@ -1,95 +1,105 @@
-﻿using Ganss.Excel;
-using System;
+﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Threading;
 
 namespace WebuyParser
 {
 
     class Program
     {
-        public static Dictionary<string, string> platforms = new Dictionary<string, string>()
-        {
-            {"PS3", "808" },
-            {"PS4", "1003" },
-            {"XBox360", "782" },
-            {"XBoxOne", "1000" }
-        };
+        static object webLocker = new object();
+        static object fileLocker = new object();
 
         static void Main(string[] args)
         {
-            CurrencyConverter.GetIndex();
-
-            List<Game> PS3Games = new List<Game>();
-            List<Game> PS4Games = new List<Game>();
-            List<Game> XBox360Games = new List<Game>();
-            List<Game> XBoxOneGames = new List<Game>();
-
-
-            GetGamesByPlatform(ref PS3Games, platforms["PS3"]);
-            GetGamesByPlatform(ref PS4Games, platforms["PS4"]);
-            GetGamesByPlatform(ref XBox360Games, platforms["XBox360"]);
-            GetGamesByPlatform(ref XBoxOneGames, platforms["XBoxOne"]);
-
-
-            Console.WriteLine("Saving results...");
-
-            ExcelMapper mapper = new ExcelMapper();
-            mapper.Save("report.xlsx", PS3Games, "PS 3", true);
-            mapper.Save("report.xlsx", PS4Games, "PS 4", true);
-            mapper.Save("report.xlsx", XBox360Games, "XBox 360", true);
-            mapper.Save("report.xlsx", XBoxOneGames, "XBox One", true);
-
-            Console.WriteLine("Complete!");
-        }
-
-        static void GetGamesByPlatform(ref List<Game> GamesList, string platform)
-        {
-            Console.WriteLine("Parsing " + platform);
-            //loop to get all games from UK website
-            try
+            while (true)
             {
-                int i = 1;
-                while (true)
+                //Connect to currency API and get exchange data
+                CurrencyConverter.GetIndexes();
+                //Let user retry if samething went wrong
+                if(CurrencyConverter.euroRate == 0 || CurrencyConverter.poundRate == 0)
                 {
-                    List<Game> temp = Processer.GetGames("uk", platform, i);
-                    temp.ForEach(x => x.PLBuyPrice = -10000);
-                    GamesList.AddRange(temp);
-                    i += 50;
+                    Console.WriteLine("Press 'y' to try again. Any other button to cancel...");
+                    var c = Console.ReadKey();
+                    if (c.KeyChar != 'y')
+                        Environment.Exit(1);
+                    continue;
                 }
+                break;
             }
-            catch (InvalidOperationException ex)
-            { }
+            Console.WriteLine("EUR excahnge rate " + CurrencyConverter.euroRate);
+            Console.WriteLine("GBP excahnge rate " + CurrencyConverter.poundRate);
+            Console.WriteLine();
 
-            //loop to add price in PL and calculate profit
-            Console.WriteLine("Compaaring prices " + platform);
-            try
+            //get all strings from sellCountry.txt and find selected string (in must NOT start with # and must be only one string)
+            List<string> temp = File.ReadAllLines("settings/sellCountry.txt").Where(x=> !x.StartsWith('#')).ToList<string>();
+            //Message if 0 or more than one country selected
+            if(temp.Count != 1)
             {
-                int k = 1;
+                Console.WriteLine("====================ERROR====================");
+                Console.WriteLine("Only 1 country must be selected in <settings/sellCountry.txt> ");
+                Console.WriteLine("leave only one line without # in the beginning");
+                Console.WriteLine("Edit <settings/sellCountry.txt> and restart the program");
+                Console.WriteLine("Push any button to cancel...");
+                Console.ReadKey();
+                Environment.Exit(1);
+            }
+            string sellCountry = temp[0];
+
+            ConcurrentBag<string> countries = new ConcurrentBag<string>(File.ReadAllLines("settings/countries.txt").ToList());
+            ConcurrentBag<string> platforms = new ConcurrentBag<string>(File.ReadAllLines("settings/platforms.txt").ToList());
+
+            if (countries.Contains(sellCountry))
+            {
+                Console.WriteLine("====================ERROR====================");
+                Console.WriteLine("You can't specify \"sell country\" in the list of \"seaarch countries\"");
+                Console.WriteLine($"{sellCountry} is also selected in <settings/countries.txt>");
+                Console.WriteLine("Please check files <settings/sellCountry.txt> and <settings/countries.txt> for conflicts and restart the program");
+                Console.WriteLine("Push any button to cancel...");
+                Console.ReadKey();
+                Environment.Exit(1);
+            }
+
+            int allowedThreads = Environment.ProcessorCount;
+            int threadCounter = 0;
+            Console.WriteLine($"Number Of allowed threads: {allowedThreads}");
+
+
+            foreach (string platform in platforms)
+            {
+                if (platform.StartsWith('#'))
+                {
+                    Console.WriteLine("Skip platform " + platform);
+                    continue;
+                }
+
                 while (true)
                 {
-                    List<Game> temp = Processer.GetGames("pl", platform, k);
-
-                    foreach (Game game in temp)
+                    if (threadCounter < allowedThreads)
                     {
-                        var t = GamesList.FirstOrDefault(x => x.Name == game.Name);
-
-                        if (t != null)
-                        {
-                            t.UKSellPrice *= CurrencyConverter.rate;
-                            t.PLBuyPrice = game.PLBuyPrice;
-                        }
+                        Interlocked.Add(ref threadCounter, 1);
+                        new Thread(() =>
+                            {
+                                new PlatformProcesser().GetGamesByPlatform(
+                                webLocker,
+                                fileLocker,
+                                platform,
+                                sellCountry,
+                                countries);
+                                Interlocked.Add(ref threadCounter, -1);
+                            }).Start();
+                        Console.WriteLine($"Threads running {threadCounter}  of {allowedThreads}");
+                        break;
                     }
-
-                    k += 50;
+                    else
+                    {
+                        Thread.Sleep(1000);
+                    }
                 }
             }
-            catch (InvalidOperationException ex)
-            { }
-
-            GamesList.ForEach(game => game.CalculateProfit());
-
-            GamesList = GamesList.OrderByDescending(x => x.Profit).ToList();
         }
     }
 }

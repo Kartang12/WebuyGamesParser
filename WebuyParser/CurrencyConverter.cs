@@ -1,4 +1,6 @@
 ﻿using Newtonsoft.Json.Linq;
+using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Net;
 
@@ -7,13 +9,18 @@ namespace WebuyParser
     //get actual exchange rate via this API and store to rate variable
     static class CurrencyConverter
     {
-        static string apiString = "https://api.exchangeratesapi.io/latest?base=GBP&symbols=PLN";
+        public static double poundRate;
+        public static double euroRate;
 
-        public static double rate;
-
-        public static void GetIndex()
+        public static void GetIndexes()
         {
-            var webRequest = WebRequest.Create(apiString) as HttpWebRequest;
+            GetIndex("GBP");
+            GetIndex("EUR");
+        }
+        public static void GetIndex(string currency)
+        {
+
+            var webRequest = WebRequest.Create($"https://api.exchangeratesapi.io/latest?base={currency}&symbols=PLN") as HttpWebRequest;
             if (webRequest == null)
             {
                 return;
@@ -21,16 +28,32 @@ namespace WebuyParser
 
             webRequest.ContentType = "application/json";
             webRequest.UserAgent = "Nothing";
-
-            using (var s = webRequest.GetResponse().GetResponseStream())
+            try
             {
-                using (var sr = new StreamReader(s))
+                using (var s = webRequest.GetResponse().GetResponseStream())
                 {
-                    var unparsed = sr.ReadToEnd();
-                    var parsed = JObject.Parse(unparsed);
-                    var a = parsed["rates"]["PLN"];
-                    rate = double.Parse(a.ToString());
+                    using (var sr = new StreamReader(s))
+                    {
+                        var unparsed = sr.ReadToEnd();
+                        var parsed = JObject.Parse(unparsed);
+                        var a = parsed["rates"]["PLN"];
+                        switch (currency)
+                        {
+                            case "GBP":
+                                poundRate = double.Parse(a.ToString());
+                                break;
+                            case "EUR":
+                                euroRate = double.Parse(a.ToString());
+                                break;
+                        }
+                    }
                 }
+            }
+            catch (System.Net.WebException)
+            {
+                Console.WriteLine("Unable to ge currency exchange data");
+                poundRate = 0;
+                euroRate = 0;
             }
         }
     }
